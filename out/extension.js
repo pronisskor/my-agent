@@ -55,6 +55,8 @@ class AgentViewProvider {
         this.currentPersona = "planner";
         this.retryCount = 0;
         this.isRunning = false;
+        // 피드백 대기 상태: true이면 다음 사용자 입력을 피드백으로 처리
+        this.awaitingFeedback = false;
     }
     resolveWebviewView(webviewView) {
         this._view = webviewView;
@@ -89,7 +91,15 @@ class AgentViewProvider {
         this.isRunning = true;
         this.postMessage("user", userInput);
         try {
-            await this.runLoop(userInput);
+            // 피드백 대기 상태이면 현재 페르소나에게 피드백을 그대로 전달
+            if (this.awaitingFeedback) {
+                this.awaitingFeedback = false;
+                this.postMessage("system", `💬 피드백을 ${this.getPersonaLabel()}에게 전달합니다.`);
+                await this.runLoop(userInput);
+            }
+            else {
+                await this.runLoop(userInput);
+            }
         }
         catch (e) {
             this.postMessage("system", `❌ 오류: ${e.message}`);
@@ -139,7 +149,7 @@ class AgentViewProvider {
             }
             else if (trigger === "planner") {
                 this.currentPersona = "planner";
-                this.retryCount = 0; // 계획자로 돌아올 때 재시도 횟수 초기화
+                this.retryCount = 0;
                 break; // 사용자 입력 대기
             }
             else if (trigger === "done") {
@@ -152,8 +162,15 @@ class AgentViewProvider {
                 this.postMessage("system", "⛔ 작업 중단. 사용자 확인이 필요합니다.");
                 break;
             }
+            else if (trigger === "feedback") {
+                // ★ 추가: 피드백 대기 상태로 전환 — 사용자 입력을 기다림
+                this.awaitingFeedback = true;
+                this.postMessage("system", `📝 ${this.getPersonaLabel()} 피드백 대기 중. 수정 사항을 입력해주세요.`);
+                break;
+            }
             else {
                 // 트리거 없음 → 사용자 입력 대기
+                // (계획자/생성자가 계획서 보고 후 확정을 기다리는 상태도 여기서 처리)
                 this.postMessage("system", "💬 다음 지시를 입력해주세요.");
                 break;
             }
@@ -167,6 +184,7 @@ class AgentViewProvider {
         this.currentPersona = "planner";
         this.retryCount = 0;
         this.isRunning = false;
+        this.awaitingFeedback = false;
         this.postMessage("system", "🔄 초기화 완료. 계획자부터 다시 시작합니다.");
     }
     getPersonaLabel() {

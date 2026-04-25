@@ -18,7 +18,7 @@ export async function callLLM(
       { role: "user", content: userMessage },
     ],
     temperature: 0.3,
-    max_tokens: 4096,
+    max_tokens: 8192,  // 4096 → 8192 (코드 생성 중 끊김 방지)
     stream: false,
   });
 
