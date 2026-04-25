@@ -1,0 +1,51 @@
+{
+  "name": "my-agent",
+  "displayName": "My Agent",
+  "description": "페르소나 기반 AI 에이전트 시스템",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "my-agent-container",
+          "title": "My Agent",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "my-agent-container": [
+        {
+          "type": "webview",
+          "id": "my-agent.chatView",
+          "name": "Agent Chat"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "my-agent.start",
+        "title": "My Agent: 시작"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
