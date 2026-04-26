@@ -35,7 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.callLLM = callLLM;
 const http = __importStar(require("http"));
-const MODEL_NAME = "gemma4:e4b";
+const MODEL_NAME = "google/gemma-4-e4b"; // ✅ 수정: 실제 모델명으로 변경
 async function callLLM(systemPrompt, userMessage) {
     const body = JSON.stringify({
         model: MODEL_NAME,
@@ -44,7 +44,7 @@ async function callLLM(systemPrompt, userMessage) {
             { role: "user", content: userMessage },
         ],
         temperature: 0.3,
-        max_tokens: 4096,
+        max_tokens: 8192,
         stream: false,
     });
     return new Promise((resolve, reject) => {
@@ -63,7 +63,12 @@ async function callLLM(systemPrompt, userMessage) {
             res.on("end", () => {
                 try {
                     const json = JSON.parse(data);
-                    const content = json.choices?.[0]?.message?.content ?? "";
+                    const message = json.choices?.[0]?.message;
+                    // ✅ 수정: gemma4는 thinking 모델이라 content가 비어있고
+                    // reasoning_content에 실제 답변이 들어옴 → 둘 다 확인
+                    const content = (message?.content && message.content.trim() !== ""
+                        ? message.content
+                        : message?.reasoning_content) ?? "";
                     resolve(content);
                 }
                 catch (e) {

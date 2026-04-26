@@ -1,6 +1,6 @@
 import * as http from "http";
 
-const MODEL_NAME = "gemma4:e4b";
+const MODEL_NAME = "google/gemma-4-e4b"; // ✅ 수정: 실제 모델명으로 변경
 
 export interface Message {
   role: "system" | "user" | "assistant";
@@ -18,7 +18,7 @@ export async function callLLM(
       { role: "user", content: userMessage },
     ],
     temperature: 0.3,
-    max_tokens: 8192,  // 4096 → 8192 (코드 생성 중 끊김 방지)
+    max_tokens: 8192,
     stream: false,
   });
 
@@ -40,7 +40,15 @@ export async function callLLM(
         res.on("end", () => {
           try {
             const json = JSON.parse(data);
-            const content = json.choices?.[0]?.message?.content ?? "";
+            const message = json.choices?.[0]?.message;
+
+            // ✅ 수정: gemma4는 thinking 모델이라 content가 비어있고
+            // reasoning_content에 실제 답변이 들어옴 → 둘 다 확인
+            const content =
+              (message?.content && message.content.trim() !== ""
+                ? message.content
+                : message?.reasoning_content) ?? "";
+
             resolve(content);
           } catch (e) {
             reject(new Error("LLM 응답 파싱 실패: " + data));
@@ -49,7 +57,9 @@ export async function callLLM(
       }
     );
 
-    req.on("error", (e) => reject(new Error("LM Studio 연결 실패: " + e.message)));
+    req.on("error", (e) =>
+      reject(new Error("LM Studio 연결 실패: " + e.message))
+    );
     req.write(body);
     req.end();
   });
