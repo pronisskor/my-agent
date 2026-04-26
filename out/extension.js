@@ -57,7 +57,7 @@ class AgentViewProvider {
         webviewView.webview.html = this.getHtml();
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? "";
         if (workspaceRoot) {
-            this.memory = new memory_1.Memory(workspaceRoot);
+            this.memory = new memory_1.Memory(workspaceRoot, this.context.extensionUri.fsPath);
         }
         webviewView.webview.onDidReceiveMessage(async (msg) => {
             if (msg.type === "userInput") {

@@ -1,6 +1,6 @@
 import * as http from "http";
 
-const MODEL_NAME = "google/gemma-4-e4b"; // ✅ 수정: 실제 모델명으로 변경
+const MODEL_NAME = "qwen2.5.1-coder-7b-instruct";
 
 export interface Message {
   role: "system" | "user" | "assistant";
@@ -11,6 +11,11 @@ export async function callLLM(
   systemPrompt: string,
   userMessage: string
 ): Promise<string> {
+  // ★ 디버그: systemPrompt가 실제로 뭔지 확인
+  console.log("=== SYSTEM PROMPT START ===");
+  console.log(systemPrompt || "(EMPTY - skill 파일을 못 읽음)");
+  console.log("=== SYSTEM PROMPT END ===");
+
   const body = JSON.stringify({
     model: MODEL_NAME,
     messages: [
@@ -40,25 +45,33 @@ export async function callLLM(
         res.on("end", () => {
           try {
             const json = JSON.parse(data);
-            const message = json.choices?.[0]?.message;
+            const choice = json.choices?.[0];
+            let content = choice?.message?.content ?? "";
+            const reasoning = choice?.message?.reasoning_content;
 
-            // ✅ 수정: gemma4는 thinking 모델이라 content가 비어있고
-            // reasoning_content에 실제 답변이 들어옴 → 둘 다 확인
-            const content =
-              (message?.content && message.content.trim() !== ""
-                ? message.content
-                : message?.reasoning_content) ?? "";
+            // 만약 content가 비어있고 reasoning_content만 있다면 그것을 사용 (일부 추론 모델 대응)
+            if (!content && reasoning) {
+              content = `(Thinking...)\n${reasoning}`;
+            }
 
+            if (json.choices?.[0]?.finish_reason === "length") {
+              content += "\n\n[⚠️ Warning: Response truncated due to length limit]";
+            }
+
+            console.log("=== LLM RAW CONTENT START ===");
+            console.log(content);
+            console.log("=== LLM RAW CONTENT END ===");
             resolve(content);
           } catch (e) {
-            reject(new Error("LLM 응답 파싱 실패: " + data));
+            reject(new Error("LLM response parse failed: " + data));
           }
         });
+
       }
     );
 
     req.on("error", (e) =>
-      reject(new Error("LM Studio 연결 실패: " + e.message))
+      reject(new Error("LM Studio connection failed: " + e.message))
     );
     req.write(body);
     req.end();

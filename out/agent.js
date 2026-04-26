@@ -9,20 +9,36 @@ exports.runEvaluator = runEvaluator;
 const llm_1 = require("./llm");
 exports.MAX_RETRY = 3;
 // ──────────────────────────────
-// Trigger detection (all English, ASCII only)
+// Trigger detection (Supports both English and Korean)
 // ──────────────────────────────
 function detectTrigger(output) {
+    if (!output)
+        return null;
+    // English triggers
     if (/NEXT\s*:\s*GENERATOR/i.test(output))
         return "generator";
     if (/NEXT\s*:\s*EVALUATOR/i.test(output))
         return "evaluator";
     if (/NEXT\s*:\s*PLANNER/i.test(output))
         return "planner";
-    if (/\bDONE\b/.test(output))
+    if (/\bDONE\b/i.test(output))
         return "done";
-    if (/\bSTOP\b/.test(output))
+    if (/\bSTOP\b/i.test(output))
         return "stop";
-    if (/\bFEEDBACK\b/.test(output))
+    if (/\bFEEDBACK\b/i.test(output))
+        return "feedback";
+    // Korean fallbacks (for localized models)
+    if (/다음\s*:\s*생성기/i.test(output))
+        return "generator";
+    if (/다음\s*:\s*평가기/i.test(output))
+        return "evaluator";
+    if (/다음\s*:\s*플래너/i.test(output))
+        return "planner";
+    if (/\b완료\b/.test(output))
+        return "done";
+    if (/\b중단\b/.test(output))
+        return "stop";
+    if (/\b피드백\b/.test(output))
         return "feedback";
     return null;
 }
